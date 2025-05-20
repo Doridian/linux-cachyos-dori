@@ -5,6 +5,8 @@
 # Contributor: Tobias Powalowski <tpowa@archlinux.org>
 # Contributor: Thomas Baechler <thomas@archlinux.org>
 
+source ./dori-shared.sh
+
 ### BUILD OPTIONS
 # Set these variables to ANYTHING that is not null or choose proper variable to enable them
 
@@ -310,6 +312,15 @@ prepare() {
         fi
     done
 
+    echo 'MT7927 patches...'
+    cd drivers/net/wireless/mediatek/mt76
+    for patch in "${srcdir}/mediatek-mt7927-dkms/mt7927-wifi-"*.patch; do
+        echo "Applying patch ${patch##*/}..."
+        patch -Np1 < "$patch"
+    done
+    cd ../../../../..
+
+
     echo "Setting config..."
     cp ../config .config
 
@@ -332,6 +343,8 @@ prepare() {
         echo "Enabling CachyOS config..."
         scripts/config -e CACHY
     fi
+
+    _dori_build_hook
 
     ### Selecting the CPU scheduler
     case "$_cpusched" in
@@ -550,12 +563,18 @@ build() {
         make -C tools/bpf/bpftool vmlinux.h feature-clang-bpf-co-re=1
     fi
 
+    local SYSSRC="${srcdir}/${_srcname}"
+
     local MODULE_FLAGS=(
        KERNEL_UNAME="${_kernuname}"
        IGNORE_PREEMPT_RT_PRESENCE=1
-       SYSSRC="${srcdir}/${_srcname}"
-       SYSOUT="${srcdir}/${_srcname}"
+       SYSSRC="${SYSSRC}"
+       SYSOUT="${SYSSRC}"
     )
+
+    cd "${srcdir}/ryzen_smu"
+    sed 's/\$(KERNEL_BUILD)/$(SYSSRC)/g' -i Makefile
+    CFLAGS= CXXFLAGS= LDFLAGS= make "${BUILD_FLAGS[@]}" "${MODULE_FLAGS[@]}" -j"$(nproc)" modules
 
     if [ "$_build_nvidia_open" = "yes" ]; then
         cd "${srcdir}/${_nv_open_pkg}"
@@ -614,6 +633,15 @@ _package() {
     echo "Installing modules..."
     ZSTD_CLEVEL=19 make "${BUILD_FLAGS[@]}" INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 \
         DEPMOD=/doesnt/exist  modules_install  # Suppress depmod
+
+    local modulesdir_sub="$modulesdir/extramodules"
+    install -dm755 "${modulesdir_sub}"
+
+    cd "${srcdir}/ryzen_smu"
+    install -m644 *.ko "${modulesdir_sub}"
+
+    _sign_modules "${modulesdir_sub}"
+    find "${modulesdir_sub}" -name '*.ko' -exec zstd --rm -19 -T0 {} +
 
     # remove build links
     rm "$modulesdir"/build
@@ -805,6 +833,8 @@ _package-r8125() {
     echo "install r8169 /usr/bin/modprobe r8125 || /usr/bin/modprobe --ignore-install r8169" > "${pkgdir}/usr/lib/modprobe.d/${pkgname}.conf"
 }
 
+_dori_pkgbuild_name_hook
+
 pkgname=("$pkgbase")
 [ "$_build_debug" = "yes" ] && pkgname+=("$pkgbase-dbg")
 pkgname+=("$pkgbase-headers")
@@ -822,3 +852,5 @@ b2sums=('79c5bb7893d04b4093ccc8972335cdb755596efe07255deec7f34b1c175716effb6ff3d
         'SKIP'
         '6bea8dff89f6d03ee5e7c6b76934e4ffaa3511cebd9c8f9986bf6c11816dcbd88f55c9c686fca6f176c35746f3fa7fc3c286218144d38289ec6f2079f5ce8b42'
         'c992567bd7dd8553432be496ffa1c17e2f5ebe9c7edb51945cf977e1b742dd6517c210d8843bb82744ca705efd07f8027cd7dde41b50215ebd707a34aa81462e')
+
+_dori_pkgbuild_end_hook
