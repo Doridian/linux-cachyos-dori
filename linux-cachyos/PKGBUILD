@@ -5,6 +5,8 @@
 # Contributor: Tobias Powalowski <tpowa@archlinux.org>
 # Contributor: Thomas Baechler <thomas@archlinux.org>
 
+source ./dori-shared.sh
+
 ### BUILD OPTIONS
 # Set these variables to ANYTHING that is not null or choose proper variable to enable them
 
@@ -313,6 +315,8 @@ prepare() {
         scripts/config -e CACHY
     fi
 
+    _dori_build_hook
+
     ### Selecting the CPU scheduler
     case "$_cpusched" in
         cachyos|bore|hardened) scripts/config -e SCHED_BORE;;
@@ -540,6 +544,10 @@ build() {
        SYSOUT="${srcdir}/${_srcname}"
     )
 
+    cd "${srcdir}/ryzen_smu"
+    sed 's/\$(KERNEL_BUILD)/$(SYSSRC)/g' -i Makefile
+    CFLAGS= CXXFLAGS= LDFLAGS= make "${BUILD_FLAGS[@]}" "${MODULE_FLAGS[@]}" -j"$(nproc)" modules
+
     if [ "$_build_nvidia_open" = "yes" ]; then
         cd "${srcdir}/${_nv_open_pkg}"
         MODULE_FLAGS+=(IGNORE_CC_MISMATCH=yes)
@@ -592,6 +600,15 @@ _package() {
     echo "Installing modules..."
     ZSTD_CLEVEL=19 make "${BUILD_FLAGS[@]}" INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 \
         DEPMOD=/doesnt/exist  modules_install  # Suppress depmod
+
+    local modulesdir_sub="$modulesdir/extramodules"
+
+    cd "${srcdir}/ryzen_smu"
+    install -dm755 "${modulesdir_sub}"
+    install -m644 *.ko "${modulesdir_sub}"
+
+    _sign_modules "${modulesdir_sub}"
+    find "${modulesdir_sub}" -name '*.ko' -exec zstd --rm -19 -T0 {} +
 
     # remove build links
     rm "$modulesdir"/build
@@ -753,6 +770,8 @@ _package-nvidia-open(){
     find "$pkgdir" -name '*.ko' -exec zstd --rm -19 -T0 {} +
 }
 
+_dori_pkgbuild_name_hook
+
 pkgname=("$pkgbase")
 [ "$_build_debug" = "yes" ] && pkgname+=("$pkgbase-dbg")
 pkgname+=("$pkgbase-headers")
@@ -769,3 +788,5 @@ b2sums=('3cb595f16f164583bdc80022d3f011f683d0b31b618b005bbc85a77005406f45ec9a6a8
         '81fafd3adcaf3b690d8d4791693e68c7ae921d103ebfd70e8d0ae15cd05ecde5e6672ae43c3a7875686d883c1f5b82d2c8b37b40aee8dcb0563913f9dd6469b6'
         '38d1c42193033ce306d45ad4f8e3116fd1714ffdab1d5b2af94cd87d3b4078ca50fbdf56f155a60f86ddbace6824d1fa3c87e60e5b1b1bea1e9e14fc636841cf'
         'c7294a689f70b2a44b0c4e9f00c61dbd59dd7063ecbe18655c4e7f12e21ed7c5bb4f5169f5aa8623b1c59de7b2667facb024913ecb9f4c650dabce4e8a7e5452')
+
+_dori_pkgbuild_end_hook
