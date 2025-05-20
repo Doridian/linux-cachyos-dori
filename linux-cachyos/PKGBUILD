@@ -79,7 +79,7 @@
 # - "native" (use compiler autodetection)
 # - "zen4" (Use znver4 compiler optimizations)
 # - "generic" (kernel's default - to share the package between machines with different CPU µarch as long as they are x86-64)
-: "${_processor_opt:=}"
+: "${_processor_opt:=zen4}"
 
 # Clang LTO mode, only available with the "llvm" compiler - options are "none", "full" or "thin".
 # ATTENTION - one of three predefined values should be selected!
@@ -762,6 +762,9 @@ _package-nvidia-open(){
     find "$pkgdir" -name '*.ko' -exec zstd --rm -19 -T0 {} +
 }
 
+pkgbase=linux-cachyos-dori
+pkgdesc='Linux CachyOS Dori'
+
 pkgname=("$pkgbase")
 [ "$_build_debug" = "yes" ] && pkgname+=("$pkgbase-dbg")
 pkgname+=("$pkgbase-headers")
@@ -779,3 +782,11 @@ b2sums=('34301ec451141cab53c6017445fb78c6a681095604387b20060e8b2102d9677cf25a3af
         '96d5bc8af80416d25bcba4151419ccd933756994bf1834dae269bd9354695a543409764af7f77eb274b7c395c2ea325fd3744056c2554d98a2ae73ad039b6393'
         '84d5dfa7bce7d4a8ce3219656669086f44c81734ec0486c5fe0a7d887a73ef662fb5533ccd337d31725c49d182e65afb3af7ce57a53e64e51439fda499d75399'
         '162130c38d315b06fdb9f0b08d1df6b63c1cc44ee140df044665ff693ab3cde4f55117eed12253504184ccd379fc7f9142aa91c5334dff1a42dbd009f43d8897')
+
+source+=(
+  'framework16_backlight_quirk.patch'
+)
+
+b2sums+=(
+  'SKIP'
+)
