@@ -5,6 +5,9 @@
 # Contributor: Tobias Powalowski <tpowa@archlinux.org>
 # Contributor: Thomas Baechler <thomas@archlinux.org>
 
+source ./dori-shared.sh
+_dori_set_optimizations server
+
 ### BUILD OPTIONS
 # Set these variables to ANYTHING that is not null or choose proper variable to enable them
 
@@ -276,6 +279,8 @@ prepare() {
         echo "Enabling CachyOS config..."
         scripts/config -e CACHY
     fi
+
+    _dori_build_hook
 
     ### Selecting the CPU scheduler
     case "$_cpusched" in
@@ -714,6 +719,8 @@ _package-nvidia-open(){
     find "$pkgdir" -name '*.ko' -exec zstd --rm -19 -T0 {} +
 }
 
+_dori_pkgbuild_name_hook
+
 pkgname=("$pkgbase")
 [ "$_build_debug" = "yes" ] && pkgname+=("$pkgbase-dbg")
 pkgname+=("$pkgbase-headers")
@@ -730,3 +737,5 @@ done
 b2sums=('87bc4da7e89cc8265aebffea7ec6c09f711be24fee87cb1c03a264c03fd5a538d66aa806640835aa5103926e612cdfbc52d7c861d7f7065f1a8bb11d893b0921'
         'ffaff366e98fe4c93ba1fcfd3d19c11a3f88ae7df1045dfb2c9e6972fe046ffeb4b46a242aef69f72129439700aefff47ae6cc651003ea963f59a522e3896179'
         '3b19a2dbf90196854c6f4cdc540721b974f61e6a1884a8114d036dc71e28e2eb21939aad058b355a9550ceaa3a0be92216f19699b352da9847d6d423c637db38')
+
+_dori_pkgbuild_end_hook
