@@ -5,6 +5,8 @@
 # Contributor: Tobias Powalowski <tpowa@archlinux.org>
 # Contributor: Thomas Baechler <thomas@archlinux.org>
 
+source ./dori-shared.sh
+
 ### BUILD OPTIONS
 # Set these variables to ANYTHING that is not null or choose proper variable to enable them
 
@@ -319,6 +321,8 @@ prepare() {
         scripts/config -e CACHY
     fi
 
+    _dori_build_hook
+
     ### Selecting the CPU scheduler
     case "$_cpusched" in
         cachyos|bore|hardened) scripts/config -e SCHED_BORE;;
@@ -569,6 +573,11 @@ build() {
         CFLAGS= CXXFLAGS= LDFLAGS= make "${BUILD_FLAGS[@]}" "${MODULE_FLAGS[@]}" -j"$(nproc)" modules
     fi
 
+    cd "${srcdir}/vmware-host-modules/vmmon-only"
+    CFLAGS= CXXFLAGS= LDFLAGS= make -C "${srcdir}/${_srcname}" "${BUILD_FLAGS[@]}" "M=$(pwd)" "SRCROOT=$(pwd)" "VM_KBUILD=yes" "VM_UNAME=${_kernuname}" -j"$(nproc)" modules
+    cd "${srcdir}/vmware-host-modules/vmnet-only"
+    CFLAGS= CXXFLAGS= LDFLAGS= make -C "${srcdir}/${_srcname}" "${BUILD_FLAGS[@]}" "M=$(pwd)" "SRCROOT=$(pwd)" "VM_KBUILD=yes" "VM_UNAME=${_kernuname}" -j"$(nproc)" modules
+
     if [ "$_build_zfs" = "yes" ]; then
         cd ${srcdir}/"zfs"
 
@@ -790,12 +799,15 @@ _package-nvidia-open(){
     find "$pkgdir" -name '*.ko' -exec zstd --rm -19 -T0 {} +
 }
 
+_dori_pkgbuild_name_hook
+
 pkgname=("$pkgbase")
 [ "$_build_debug" = "yes" ] && pkgname+=("$pkgbase-dbg")
 pkgname+=("$pkgbase-headers")
 [ "$_build_zfs" = "yes" ] && pkgname+=("$pkgbase-zfs")
 [ "$_build_nvidia" = "yes" ] && pkgname+=("$pkgbase-nvidia")
 [ "$_build_nvidia_open" = "yes" ] && pkgname+=("$pkgbase-nvidia-open")
+pkgname+=("$pkgbase-vmware-host-modules")
 for _p in "${pkgname[@]}"; do
     eval "package_$_p() {
     $(declare -f "_package${_p#$pkgbase}")
@@ -807,3 +819,5 @@ b2sums=('b94b7b9bf18aca0c3e50baf79b009a1448fc6cd9c3ee019f641cc247dcf53a4abef4274
         '4193034f32392fe6c551080b2afab61d7efbb3a7205daf73490a102d2649b1fa54e0e91dcd3b99afd29795dbf11c1d1a17e0f9b7fd9747b90d296977f2a7bb77'
         'a654067abc42135eaabb8a4414edb3a7f5c7707b92f997c868860b89caf0819fefbe96f751ca22bbbebb365431c54650d07a31dfd1b7485b029d0b8e0903d178'
         'c7294a689f70b2a44b0c4e9f00c61dbd59dd7063ecbe18655c4e7f12e21ed7c5bb4f5169f5aa8623b1c59de7b2667facb024913ecb9f4c650dabce4e8a7e5452')
+
+_dori_pkgbuild_end_hook
