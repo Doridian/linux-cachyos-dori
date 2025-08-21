@@ -5,6 +5,9 @@
 # Contributor: Tobias Powalowski <tpowa@archlinux.org>
 # Contributor: Thomas Baechler <thomas@archlinux.org>
 
+source ./dori-shared.sh
+_dori_set_optimizations server
+
 ### BUILD OPTIONS
 # Set these variables to ANYTHING that is not null or choose proper variable to enable them
 
@@ -276,6 +279,8 @@ prepare() {
         echo "Enabling CachyOS config..."
         scripts/config -e CACHY
     fi
+
+    _dori_build_hook
 
     ### Selecting the CPU scheduler
     case "$_cpusched" in
@@ -714,6 +719,8 @@ _package-nvidia-open(){
     find "$pkgdir" -name '*.ko' -exec zstd --rm -19 -T0 {} +
 }
 
+_dori_pkgbuild_name_hook
+
 pkgname=("$pkgbase")
 [ "$_build_debug" = "yes" ] && pkgname+=("$pkgbase-dbg")
 pkgname+=("$pkgbase-headers")
@@ -729,4 +736,12 @@ done
 
 b2sums=('251feef2f995c155850eac2fce5b89f37f39e9f13b6a4e6873370fdc69654692c6bf6c92f04ca7c0b5fd6088d74442afb68db71d2cc18691e23c61b0be714f34'
         'ca08c1ad172af846ccf78e3694713a68191fec6e59fba5e0a6c90ba228fac5eab77fb8603f35190586d77f6acbf6f87fdb3a1c835d2d68e635c5e1e4d7e7ebe8'
-        '10333c7ee4e2a30fc109d138e4d9b09ae49cd0396e0e72a5379ba7ab344dfddf4f26b00788a497c67b151ca3cfd56ef50c4cf99c9928214ca9215a2a1f6025e7')
+        '10333c7ee4e2a30fc109d138e4d9b09ae49cd0396e0e72a5379ba7ab344dfddf4f26b00788a497c67b151ca3cfd56ef50c4cf99c9928214ca9215a2a1f6025e7'
+        '51eb6c8af8a2c2c81971ba35f0894e5428b61b4d1544bc3f922cbd56ebda804503f2bac160d0c4b5766862509242ea730ec53296ea50d592dec532a8e5398526'
+        'fba7de139809daf49d799e06de742f87a98aae801539ba3de663e9852b1435dd27e42e2c9679b0b1c93bd81d8e37fea57457d15b287177cb6815baa3ea6e6ade'
+        '05a3cc4954a37897d08e93e8ea1726fc395a12cfb1509f09560bdcf0ae14ed4ca518fda566a618c92db0fb6573e3ed7d02172dd76a3b145982060e060525365b'
+        'cc76c296c19e3f4c60d527d2fea3cda572996a578572421ccaff0b8ea36f276e90d5a0aa54e5836545961edb8959c8e81fb13f7b3381ba94c6d2a3ce0da01b9f'
+        '05a3cc4954a37897d08e93e8ea1726fc395a12cfb1509f09560bdcf0ae14ed4ca518fda566a618c92db0fb6573e3ed7d02172dd76a3b145982060e060525365b'
+        'bccb4169c43e556f10cddaf8f101cc0b29209f984b9f681f266602a359bc6b4765b48d192006decd23667bd2b899fad9c1fd5b742251014dacc7c077ea023e0f')
+
+_dori_pkgbuild_end_hook
